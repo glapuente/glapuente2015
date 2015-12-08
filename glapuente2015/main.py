@@ -15,88 +15,93 @@
 # limitations under the License.
 #
 import webapp2
+import os
+import urllib
+import cgi
+import re
 
-indexHTML = '''
-<html>
-	<head>
-		<link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-		<title>Hola/Hello/Kaixo</title>
-	</head>
-	<body>
-		<h1>Primer proyecto en GAE</h1>
-		<h2>DSSW</h2>
-		<div>
-			<table>
-			<tr><td><a href="/saludaES">Saluda en Castellano</a></td></tr>
-			<tr><td><a href="/saludaEN">Say Hello in English</a></td></tr>
-			<tr><td><a href="/saludaEUS">Agurtu Euskaraz</a></td></tr>
-			</table>
-		</div>
-		<div>
-			<img src="img/app-engine-logo.png" alt="GAE logo">
-		</div>
-	</body>
-</html>
-'''
 
-helloWorld = '''
-<html>
-	<head>
-		<link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-		<title>Hello</title>
-	</head>
-	<body>
-		<h1>Hello World!</h1>
-		<a href="../">Back</a>
-	</body>
-</html>
-'''
+import jinja2
+JINJA_ENVIRONMENT = jinja2.Environment(
+	loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')))	
 
-holaMundo = '''
-<html>
-	<head>
-		<link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-		<title>Hola</title>
-	</head>
-	<body>
-		<h1>Hola Mundo!</h1>
-		<a href="../">Back</a>
-	</body>
-</html>
-'''
-
-kaixoMundua = '''
-<html>
-	<head>
-		<link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-		<title>Kaixo</title>
-	</head>
-	<body>
-		<h1>Kaixo Mundua!</h1>
-		<a href="../">Back</a>
-	</body>
-</html>
-'''
 
 class Links(webapp2.RequestHandler):
     def get(self):
-        self.response.write(indexHTML)
+		template=JINJA_ENVIRONMENT.get_template('index.html')
+		self.response.write(template.render())
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        self.response.write(helloWorld)
+		template=JINJA_ENVIRONMENT.get_template('saludoEN.html')
+		self.response.write(template.render())
 
 class MainHandlerES(webapp2.RequestHandler):
     def get(self):
-        self.response.write(holaMundo)
+		template=JINJA_ENVIRONMENT.get_template('saludoES.html')
+		self.response.write(template.render())
 		
 class MainHandlerEUS(webapp2.RequestHandler):
     def get(self):
-        self.response.write(kaixoMundua)
+		template=JINJA_ENVIRONMENT.get_template('saludoEUS.html')
+		self.response.write(template.render())
+		
+class LoginForm(webapp2.RequestHandler):
+	def get(self):
+		template=JINJA_ENVIRONMENT.get_template('login_form.html')
+		self.response.write(template.render())
+		
+class ValidarHandle(webapp2.RequestHandler):
+	def post(self):
+		username = cgi.escape(self.request.get('username'),quote=True)
+		email = cgi.escape(self.request.get('email'),quote=True)
+		password = cgi.escape(self.request.get('password'),quote=True)
+		rePassword = cgi.escape(self.request.get('rePassword'),quote=True)
+		
+		html_error_msg=""
+		error_flag=1
+		
+		# Empty fields
+		if(username==""):
+			html_error_msg+="<h3>The username field cannot be empty</h3></hr>"
+			error_flag=-1
+		if(email==""):
+			html_error_msg+="<h3>The email field cannot be empty</h3></hr>"
+			error_flag=-1
+		if(password=="" or rePassword==""):
+			html_error_msg+="<h3>The password field cannot be empty</h3></hr>"
+			error_flag=-1
+		
+		# Repeat passwords
+		if(password!=rePassword):
+			html_error_msg+="<h3>The passwords must match</h3></hr>"
+			error_flag=-1
+		
+		# Password regexp - Min. 8 Max.12. At least 1 num, lower and upper
+		if not re.match("((?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,12})",password):
+			html_error_msg+="<h3>The password does not comply with the pattern</h3></hr>"
+			error_flag=-1
+			
+		if not re.match("^[a-zA-Z0-9._%-+]+@[a-zA-Z0-9._%-]+.[a-zA-Z]{2,6}$",email):
+			html_error_msg+="<h3>The email does not comply with the pattern</h3></hr>"
+			error_flag=-1
+
+		tpl_vars={"username":username,"email":email}
+
+		if(error_flag==-1):
+			template=JINJA_ENVIRONMENT.get_template('login_form.html')
+			self.response.write(template.render(tpl_vars))
+			self.response.write(html_error_msg)
+		else:
+			self.response.write("<h1>Bienvenido "+username+"</h1>")
+		
+		
 
 app = webapp2.WSGIApplication([
     ('/', Links),
     ('/saludaEN', MainHandler),
     ('/saludaES', MainHandlerES),
-	('/saludaEUS', MainHandlerEUS)
+	('/saludaEUS', MainHandlerEUS),
+	('/loginForm', LoginForm),
+	('/validar', ValidarHandle)
 ], debug=True)
