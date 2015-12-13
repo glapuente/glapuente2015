@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<link type="text/css" rel="stylesheet" href="/libs/css/bootstrap.min.css" />
@@ -5,8 +6,13 @@
 		<script src="/libs/js/jquery-1.11.3.min.js"></script>
 		<script src="/libs/js/bootstrap.js"></script>
 		<title>Hola/Hello/Kaixo</title>
+		
+		<style type="text/css">
+			html, body { height: 100%; margin: 0; padding: 0; }
+			#map { height: 40%; }
+    </style>
 	</head>
-	<body
+	<body>
 	
 	<!-- Navigation -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -49,22 +55,68 @@
         <!-- /.container -->
     </nav>
 	
-	<header class="image-bg-fluid-height">
-        <img class="img-responsive img-center" src="libs/img/app-engine-logo.png" alt="GAE logo">
-    </header>
-	<section>
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="section-heading">GAE+Python</h1>
-                    <p class="lead section-lead">Desarrollo de Software Seguro en la Web</p>
-                    <p class="section-paragraph">Proyecto incremental de la asignatura DSSW. Se utiliza Google App Engine + Python</p>
-                </div>
-            </div>
-        </div>
-    </section>
-	
-	
-	
+	<div class="jumbotron">
+		<div class="container">
+			<h1>Indica un lugar para ver su mapa</h1>
+			<h2>Al indicar el lugar, abandona el campo para verlo en el mapa</h2>
+		</div>
+	</div>
+		<div class="container">
+		<form class="form-horizontal" method="post">
+				<div class="form-group">
+					<label for="lugar" class="col-sm-2 control-label">Lugar</label>
+					<div class="col-sm-10">
+						<input placeholder="Barakaldo" id="lugar" required type="text" name="lugar" value="{{username}}"/> <br/>
+					</div>
+				</div>
+
+		</form>
+		<h2 hidden id="exists_lugar"></h2>
+		</div>
+		
+		<p id="lat"></p>
+		<p id="lng"></p>
+		
+		<div id="map"></div>
+		<script>
+		var lat_ret = -34.397;
+		var lng_ret = 150.644;
+			$(document).ready(function(){
+				$("#lugar").blur(function(){
+					$("#exists_lugar").show();
+					$.ajax({url:"/Maps",
+						data:{"lugar":$("#lugar").val()},
+						type: "post",
+						success:function(result){
+							// $("#exists_lugar").html(result);
+							var obj = eval ("("+result+")");
+							// alert(obj.lat);
+							lat_ret = parseFloat(obj.lat);
+							lng_ret = parseFloat(obj.lng);
+							initMap();
+						}});
+				});
+			});
+		
+		
+		var map;
+		var marker;
+		function initMap() {
+			map = new google.maps.Map(document.getElementById("map"), {
+				center: {lat: lat_ret, lng: lng_ret},
+				zoom: 11
+			});
+			
+			marker = new google.maps.Marker({
+				map: map,
+				draggable: false,
+				animation: google.maps.Animation.DROP,
+				position: {lat: lat_ret, lng: lng_ret}
+			});
+		}
+		</script>
+		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC5zKY3UI7AWSPkw7U_vDVOI6CBwhBhR0o&callback=initMap"
+        async defer></script>
+  </body>
 	</body>
 </html>
