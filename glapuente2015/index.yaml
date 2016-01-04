@@ -11,6 +11,11 @@ indexes:
 # your application using appcfg.py.
 
 - kind: User
+  properties:
+  - name: uemail
+  - name: contra
+
+- kind: User
   ancestor: yes
   properties:
   - name: created
